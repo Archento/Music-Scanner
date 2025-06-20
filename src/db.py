@@ -50,7 +50,9 @@ def db_test() -> bool:
     return result
 
 
-def _db_get(query: str, model: BaseModel | None = None) -> list[BaseModel | dict]:
+def _db_get(
+    query: str, model: type[BaseModel] | None = None
+) -> list[BaseModel | dict]:
     """
     Get data from the database.
     :param query: SQL query to execute.
@@ -60,10 +62,13 @@ def _db_get(query: str, model: BaseModel | None = None) -> list[BaseModel | dict
     cursor = database.cursor()
     try:
         cursor.execute(query)
-        result = [dict(zip(cursor.metadata["field"], row)) for row in cursor.fetchall()]
+        result = [
+            dict(zip(cursor.metadata["field"], row))
+            for row in cursor.fetchall()
+        ]
         if model:
             return [model(**data) for data in result]
-        return result
+        return result  # type: ignore
     except mariadb.Error as e:
         print(f"Error executing query: {e}")
     finally:
@@ -98,10 +103,10 @@ def db_get_artist(name: str) -> Artist | None:
     :param name: Name of the artist.
     :return: Artist data.
     """
-    query = f"SELECT * FROM artists WHERE name = '{name}'"
+    query = f'SELECT * FROM artists WHERE name = "{name}"'
 
     result = _db_get(query, Artist)
-    return result[0] if result else None
+    return result[0] if result else None  # type: ignore
 
 
 def db_set_artist(data: Artist) -> bool:
@@ -136,7 +141,7 @@ def db_set_artist(data: Artist) -> bool:
 
 def db_get_albums_by_artist_id(
     artist_id: int, album_type: Literal["album", "single", "ep"] | None = None
-) -> list[Album]:
+) -> list[Album | dict]:
     """
     Get album from the database.
     :param artist_id: ID of the artist.

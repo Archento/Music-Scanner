@@ -1,3 +1,7 @@
+"""
+Main script to crawl a music library and retrieve artist and album information.
+"""
+
 import json
 import os
 import sys
@@ -52,17 +56,21 @@ def retrieve_albums(artist: Artist) -> list[Album]:
     return albums
 
 
-def fast_scandir(dirname: str, blacklist: set = BLACKLIST) -> list[str]:
+def fast_scandir(dirname: str, blacklist: set | None = None) -> list[str]:
     """Fast directory scanner to retrieve all subdirectories."""
+    if blacklist is None:
+        blacklist = BLACKLIST
     subfolders = [
-        f.path for f in os.scandir(dirname) if f.is_dir() and f.name not in blacklist
+        f.path
+        for f in os.scandir(dirname)
+        if f.is_dir() and f.name not in blacklist
     ]
     for dir_name in list(subfolders):
         subfolders.extend(fast_scandir(dir_name))
     return subfolders
 
 
-def crawl_music_library(folder_path: str) -> dict[str, list[str]]:
+def crawl_music_library(folder_path: str = ".") -> dict[str, list[str]]:
     """Crawl the music library to retrieve artist and album information"""
     all_folders = fast_scandir(folder_path)
     prefix = os.path.commonprefix(all_folders)
@@ -74,9 +82,12 @@ def crawl_music_library(folder_path: str) -> dict[str, list[str]]:
             artist_name = folder.split("/")[0]
             if artist_name not in artists:
                 artists[artist_name] = []
-            album_name = folder.split("/")[-1]
-            if album_name not in artists[artist_name]:
-                artists[artist_name].append(album_name)
+            if folder.count("/") == 1:
+                # only add album if it is a subfolder of the artist and
+                # not a nested folder
+                album_name = folder.split("/")[-1]
+                if album_name not in artists[artist_name]:
+                    artists[artist_name].append(album_name)
         else:
             artists[folder] = []
     print(f"Found {len(artists)} artists in the music library.")
@@ -88,13 +99,25 @@ def crawl_music_library(folder_path: str) -> dict[str, list[str]]:
 def main():
     """Main function to run the script"""
     library = crawl_music_library("/Volumes/media/music/Music")
+    # library = crawl_music_library("music")
 
     with open("library.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(library, indent=4, sort_keys=True))
 
-    missing = {}
+    missing_artists = []
+    db_artists = []
     for artist, albums in library.items():
         db_artist = retrieve_artist(artist)
+        if db_artist:
+            db_artists.append(db_artist)
+        else:
+            missing_artists.append(artist)
+
+    print(f"Found {len(db_artists)} of {len(library)} artists in the database.")
+    if missing_artists:
+        print(f"Missing artists: {', '.join(missing_artists)}")
+
+    # TODO: next step: retrieve albums for each db_artist and compare with library
 
 
 if __name__ == "__main__":

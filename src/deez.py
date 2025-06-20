@@ -38,7 +38,7 @@ def search_artist(artist_name, strict=False) -> tuple[list[Artist], int]:
         artists = []
         for entry in data:
             artists.append(Artist(**entry))
-        return artists, response.get("total")
+        return artists, response.get("total", 0)
     print(f"Failed to retrieve data for artist: {artist_name}")
     return [], 0
 
@@ -52,13 +52,16 @@ def search_artist_albums(artist: Artist) -> tuple[list[Album], int]:
     artist_id = artist.id
     url = f"{BASEURL_EXAMPLE}artist/{artist_id}/albums"
     response = _make_request(url)
+    if not response:
+        print(f"Failed to retrieve albums for artist ID: {artist_id}")
+        return [], 0
     total = response.get("total")  # 52
-    albums = []
-    if not response or not total:
+    if not total:
         print(f"No albums found for artist ID: {artist_id}")
         return [], 0
 
     data = response.get("data") or []
+    albums = []
     for entry in data:
         albums.append(Album(**entry))
     if "next" in response:
