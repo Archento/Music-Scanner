@@ -44,6 +44,8 @@ def retrieve_artist(artist_name: str) -> Artist | None:
     return artist
 
 
+# this needs to be refactored since new albums need to be added
+# to the database if they are not already present
 def retrieve_albums(artist: Artist) -> list[Album]:
     """
     Retrieve albums for a given artist from the database or Deezer API.
@@ -110,15 +112,20 @@ def main():
     if missing_artists:
         print(f"Missing artists: {', '.join(missing_artists)}")
 
-    # TODO: next step: retrieve albums for each db_artist and compare with library
+    artist_album_map: dict[str, list[str]] = {}
+
     for artist in db_artists:
         albums: list[Album] = retrieve_albums(artist)
-        if not albums:
-            print(f"No albums found for artist '{artist.name}'.")
+        if albums:
+            sorted(albums, key=lambda x: x.release_date, reverse=True)
+            artist_album_map[artist.name] = [
+                f"{album.release_date.year} - {album.title}" for album in albums
+            ]
         else:
-            print(f"Found {len(albums)} albums for artist '{artist.name}'.")
-            for album in albums:
-                print(f" - {album.title} ({album.release_date})")
+            artist_album_map[artist.name] = []
+
+    with open("artist_albums.json", "w", encoding="utf-8") as f:
+        f.write(json.dumps(artist_album_map, indent=4, sort_keys=True))
 
 
 if __name__ == "__main__":

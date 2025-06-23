@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -24,12 +25,12 @@ class Album(BaseModel):
     title: str
     link: str
     cover: str
-    cover_small: str
-    cover_medium: str
-    cover_big: str
-    cover_xl: str
+    cover_small: str | None = None
+    cover_medium: str | None = None
+    cover_big: str | None = None
+    cover_xl: str | None = None
     genre_id: int
     fans: int
-    release_date: str
-    record_type: Literal["album", "single", "ep"]
+    release_date: datetime
+    record_type: Literal["album", "single", "ep", "compile"]
     explicit_lyrics: bool

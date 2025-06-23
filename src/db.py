@@ -131,7 +131,7 @@ def db_set_artist(data: Artist) -> bool:
             tracklist = VALUES(tracklist),
             type = VALUES(type)
     """
-    params = tuple(*data.model_dump().values())
+    params = tuple([*data.model_dump().values()])
     return _db_set(query, params)
 
 
@@ -179,5 +179,5 @@ def db_set_album(artist_id: int, data: Album) -> bool:
             explicit_lyrics = VALUES(explicit_lyrics),
             artist_id = VALUES(artist_id)
     """
-    params = tuple(*data.model_dump().values()) + (artist_id,)
+    params = tuple([*data.model_dump().values()]) + (artist_id,)
     return _db_set(query, params)

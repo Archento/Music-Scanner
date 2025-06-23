@@ -1,6 +1,6 @@
 import os
 
-from config import BLACKLIST
+from src.config import BLACKLIST
 
 
 def fast_scandir(dirname: str, blacklist: set | None = None) -> list[str]:
