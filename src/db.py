@@ -50,9 +50,7 @@ def db_test() -> bool:
     return result
 
 
-def _db_get(
-    query: str, model: type[BaseModel] | None = None
-) -> list[BaseModel | dict]:
+def _db_get(query: str, model: type[BaseModel]) -> list[BaseModel]:
     """
     Get data from the database.
     :param query: SQL query to execute.
@@ -66,9 +64,7 @@ def _db_get(
             dict(zip(cursor.metadata["field"], row))
             for row in cursor.fetchall()
         ]
-        if model:
-            return [model(**data) for data in result]
-        return result  # type: ignore
+        return [model(**data) for data in result]
     except mariadb.Error as e:
         print(f"Error executing query: {e}")
     finally:
@@ -135,13 +131,13 @@ def db_set_artist(data: Artist) -> bool:
             tracklist = VALUES(tracklist),
             type = VALUES(type)
     """
-    params = [*data.model_dump().values()]
+    params = tuple(*data.model_dump().values())
     return _db_set(query, params)
 
 
 def db_get_albums_by_artist_id(
     artist_id: int, album_type: Literal["album", "single", "ep"] | None = None
-) -> list[Album | dict]:
+) -> list[Album]:
     """
     Get album from the database.
     :param artist_id: ID of the artist.
@@ -152,7 +148,7 @@ def db_get_albums_by_artist_id(
         query += f" AND record_type = '{album_type}'"
     query += " ORDER BY release_date ASC"
 
-    return _db_get(query, Album)
+    return _db_get(query, Album)  # type: ignore
 
 
 def db_set_album(artist_id: int, data: Album) -> bool:
@@ -183,5 +179,5 @@ def db_set_album(artist_id: int, data: Album) -> bool:
             explicit_lyrics = VALUES(explicit_lyrics),
             artist_id = VALUES(artist_id)
     """
-    params = [*data.model_dump().values(), artist_id]
+    params = tuple(*data.model_dump().values()) + (artist_id,)
     return _db_set(query, params)

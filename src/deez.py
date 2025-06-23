@@ -24,6 +24,7 @@ def _make_request(url, method="GET", params=None) -> dict | None:
 def search_artist(artist_name, strict=False) -> tuple[list[Artist], int]:
     """
     Search for an artist by name.
+
     :param artist_name: Name of the artist to search for.
     :return: JSON response from the Deezer API.
     """
@@ -46,6 +47,7 @@ def search_artist(artist_name, strict=False) -> tuple[list[Artist], int]:
 def search_artist_albums(artist: Artist) -> tuple[list[Album], int]:
     """
     Search for an artist's albums by artist ID.
+
     :param artist_id: ID of the artist to search for.
     :return: JSON response from the Deezer API.
     """
@@ -55,7 +57,7 @@ def search_artist_albums(artist: Artist) -> tuple[list[Album], int]:
     if not response:
         print(f"Failed to retrieve albums for artist ID: {artist_id}")
         return [], 0
-    total = response.get("total")  # 52
+    total = response.get("total")
     if not total:
         print(f"No albums found for artist ID: {artist_id}")
         return [], 0
