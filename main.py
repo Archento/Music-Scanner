@@ -6,7 +6,6 @@ import json
 import os
 import sys
 
-from src.config import BLACKLIST
 from src.db import (
     db_close,
     db_get_albums_by_artist_id,
@@ -17,6 +16,7 @@ from src.db import (
 )
 from src.deez import search_artist, search_artist_albums
 from src.models import Album, Artist
+from src.utils import fast_scandir
 
 
 def retrieve_artist(artist_name: str) -> Artist | None:
@@ -45,29 +45,22 @@ def retrieve_artist(artist_name: str) -> Artist | None:
 
 
 def retrieve_albums(artist: Artist) -> list[Album]:
+    """
+    Retrieve albums for a given artist from the database or Deezer API.
+
+    :param artist: Artist object for which to retrieve albums.
+    :return: List of Album objects.
+    """
     albums = []
-    albums = db_get_albums_by_artist_id(artist.id)
+    albums = db_get_albums_by_artist_id(artist.id, album_type="album")
     if not albums:
         print("Albums not found in the database. Querying Deezer API...")
         albums, hits = search_artist_albums(artist)
         print(f"Found {hits} albums.")
         for album in albums:
             db_set_album(artist.id, album)
+        return [a for a in albums if a.record_type == "album"]
     return albums
-
-
-def fast_scandir(dirname: str, blacklist: set | None = None) -> list[str]:
-    """Fast directory scanner to retrieve all subdirectories."""
-    if blacklist is None:
-        blacklist = BLACKLIST
-    subfolders = [
-        f.path
-        for f in os.scandir(dirname)
-        if f.is_dir() and f.name not in blacklist
-    ]
-    for dir_name in list(subfolders):
-        subfolders.extend(fast_scandir(dir_name))
-    return subfolders
 
 
 def crawl_music_library(folder_path: str = ".") -> dict[str, list[str]]:
@@ -104,9 +97,9 @@ def main():
     with open("library.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(library, indent=4, sort_keys=True))
 
-    missing_artists = []
-    db_artists = []
-    for artist, albums in library.items():
+    missing_artists: list[str] = []
+    db_artists: list[Artist] = []
+    for artist, _ in library.items():
         db_artist = retrieve_artist(artist)
         if db_artist:
             db_artists.append(db_artist)
@@ -118,6 +111,14 @@ def main():
         print(f"Missing artists: {', '.join(missing_artists)}")
 
     # TODO: next step: retrieve albums for each db_artist and compare with library
+    for artist in db_artists:
+        albums: list[Album] = retrieve_albums(artist)
+        if not albums:
+            print(f"No albums found for artist '{artist.name}'.")
+        else:
+            print(f"Found {len(albums)} albums for artist '{artist.name}'.")
+            for album in albums:
+                print(f" - {album.title} ({album.release_date})")
 
 
 if __name__ == "__main__":
