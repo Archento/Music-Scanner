@@ -1,6 +1,10 @@
+from logging import getLogger
+
 import requests
 
 from src.models import Album, Artist
+
+logger = getLogger(__name__)
 
 BASEURL_EXAMPLE = "https://api.deezer.com/"
 
@@ -17,7 +21,7 @@ def _make_request(url, method="GET", params=None) -> dict | None:
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        logger.error("An error occurred: %s", e)
         return None
 
 
@@ -34,13 +38,13 @@ def search_artist(artist_name, strict=False) -> tuple[list[Artist], int]:
     if response:
         data = response.get("data") or []
         if not data:
-            print(f"No data found for artist: {artist_name}")
+            logger.warning("No data found for artist: %s", artist_name)
             return [], 0
         artists = []
         for entry in data:
             artists.append(Artist(**entry))
         return artists, response.get("total", 0)
-    print(f"Failed to retrieve data for artist: {artist_name}")
+    logger.error("Failed to retrieve data for artist: %s", artist_name)
     return [], 0
 
 
@@ -55,11 +59,11 @@ def search_artist_albums(artist: Artist) -> tuple[list[Album], int]:
     url = f"{BASEURL_EXAMPLE}artist/{artist_id}/albums"
     response = _make_request(url)
     if not response:
-        print(f"Failed to retrieve albums for artist ID: {artist_id}")
+        logger.error("Failed to retrieve albums for artist ID: %s", artist_id)
         return [], 0
     total = response.get("total")
     if not total:
-        print(f"No albums found for artist ID: {artist_id}")
+        logger.warning("No albums found for artist ID: %s", artist_id)
         return [], 0
 
     data = response.get("data") or []
@@ -67,19 +71,23 @@ def search_artist_albums(artist: Artist) -> tuple[list[Album], int]:
     for entry in data:
         albums.append(Album(**entry))
     if "next" in response:
-        print("Fetching additional pages of albums...")
+        logger.debug("Fetching additional pages of albums...")
         while total > len(albums):
             url = response.get("next")
             if not url:
-                print("No more pages to fetch.")
+                logger.debug("No more pages to fetch.")
                 break
             response = _make_request(url)
             if not response:
-                print("Failed to retrieve albums.")
+                logger.error("Failed to retrieve albums.")
                 break
             data = response.get("data") or []
             if not data:
-                print(f"No albums found for artist ID: {artist_id}")
+                logger.warning(
+                    "No albums found for artist ID: %s (%s)",
+                    artist_id,
+                    artist.name,
+                )
                 break
             for entry in data:
                 albums.append(Album(**entry))

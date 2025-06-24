@@ -1,4 +1,5 @@
 import sys
+from logging import getLogger
 from typing import Literal
 
 import mariadb
@@ -6,6 +7,8 @@ from pydantic import BaseModel
 
 from src.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 from src.models import Album, Artist
+
+logger = getLogger(__name__)
 
 try:
     database = mariadb.connect(
@@ -16,7 +19,7 @@ try:
         database=DB_NAME,
     )
 except mariadb.Error as e:
-    print(f"Error connecting to MariaDB Platform: {e}")
+    logger.error("Error connecting to MariaDB Platform: %s", e)
     sys.exit(1)
 
 
@@ -28,9 +31,9 @@ def db_close() -> None:
     try:
         database.close()
     except mariadb.Error as e:
-        print(f"Error closing database connection: {e}")
+        logger.error("Error closing database connection: %s", e)
         sys.exit(1)
-    print("Database connection closed.")
+    logger.info("Database connection closed.")
 
 
 def db_test() -> bool:
@@ -44,7 +47,7 @@ def db_test() -> bool:
         cursor.execute("SELECT 1")
         result = True
     except mariadb.Error as e:
-        print(f"Error testing database connection: {e}")
+        logger.error("Error testing database connection: %s", e)
     finally:
         cursor.close()
     return result
@@ -66,7 +69,7 @@ def _db_get(query: str, model: type[BaseModel]) -> list[BaseModel]:
         ]
         return [model(**data) for data in result]
     except mariadb.Error as e:
-        print(f"Error executing query: {e}")
+        logger.error("Error executing query: %s", e)
     finally:
         cursor.close()
     return []
@@ -86,7 +89,7 @@ def _db_set(query: str, params: tuple | None = None) -> bool:
         cursor.execute(query, params)
         return True
     except mariadb.Error as e:
-        print(f"Error executing query: {e}")
+        logger.error("Error executing query: %s", e)
     finally:
         cursor.close()
         database.commit()
