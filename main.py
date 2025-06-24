@@ -5,6 +5,7 @@ Main script to crawl a music library and retrieve artist and album information.
 import json
 import os
 import sys
+from logging import getLogger
 
 from src.db import (
     db_close,
@@ -18,6 +19,8 @@ from src.deez import search_artist, search_artist_albums
 from src.models import Album, Artist
 from src.utils import fast_scandir
 
+logger = getLogger(__name__)
+
 
 def retrieve_artist(artist_name: str) -> Artist | None:
     """
@@ -26,20 +29,21 @@ def retrieve_artist(artist_name: str) -> Artist | None:
     :param artist_name: Name of the artist to retrieve.
     :return: Artist object or None if not found.
     """
+    logger.info("Retrieving artist: %s", artist_name)
     artist = None
     artist = db_get_artist(artist_name)
     if not artist:
-        print("Artist not found in the database. Querying Deezer API...")
+        logger.info("Artist not found in the database. Querying Deezer API...")
         artists, hits = search_artist(artist_name)
-        print(f"Found {hits} artists.")
+        logger.debug("Found %s artists.", hits)
         for artist in artists:
             db_set_artist(artist)
         if hits:
             artist = db_get_artist(artist_name)
-            print("Artist added to the database.")
+            logger.debug("Artist added to the database.")
 
     if not artist:
-        print(f"Artist '{artist_name}' not available.")
+        logger.warning("Artist '%s' not available.", artist_name)
 
     return artist
 
@@ -53,12 +57,13 @@ def retrieve_albums(artist: Artist) -> list[Album]:
     :param artist: Artist object for which to retrieve albums.
     :return: List of Album objects.
     """
+    logger.info("Retrieving albums for artist: %s", artist.name)
     albums = []
     albums = db_get_albums_by_artist_id(artist.id, album_type="album")
     if not albums:
-        print("Albums not found in the database. Querying Deezer API...")
+        logger.info("Albums not found in the database. Querying Deezer API...")
         albums, hits = search_artist_albums(artist)
-        print(f"Found {hits} albums.")
+        logger.debug("Found %s albums.", hits)
         for album in albums:
             db_set_album(artist.id, album)
         return [a for a in albums if a.record_type == "album"]
@@ -85,16 +90,15 @@ def crawl_music_library(folder_path: str = ".") -> dict[str, list[str]]:
                     artists[artist_name].append(album_name)
         else:
             artists[folder] = []
-    print(f"Found {len(artists)} artists in the music library.")
+    logger.debug("Found %s artists in the music library.", len(artists))
     for albums in artists.values():
         albums.sort()
     return artists
 
 
-def main():
+def main(path: str = ".") -> None:
     """Main function to run the script"""
-    library = crawl_music_library("/Volumes/media/music/Music")
-    # library = crawl_music_library("music")
+    library = crawl_music_library(path)
 
     with open("library.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(library, indent=4, sort_keys=True))
@@ -108,9 +112,11 @@ def main():
         else:
             missing_artists.append(artist)
 
-    print(f"Found {len(db_artists)} of {len(library)} artists in the database.")
+    logger.debug(
+        "Found %s of %s artists in the database.", len(db_artists), len(library)
+    )
     if missing_artists:
-        print(f"Missing artists: {', '.join(missing_artists)}")
+        logger.info("Missing artists: %s", ", ".join(missing_artists))
 
     artist_album_map: dict[str, list[str]] = {}
 
@@ -123,14 +129,39 @@ def main():
             ]
         else:
             artist_album_map[artist.name] = []
+    sorted(artist_album_map.items())
 
     with open("artist_albums.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(artist_album_map, indent=4, sort_keys=True))
 
+    # write markdown file with comparison of artists and albums
+    with open("result.md", "w", encoding="utf-8") as f:
+        f.write("# Artist Albums Comparison\n\n")
+        f.write(
+            "This file contains a list of artists and their albums and "
+            "marks them if they are not in the music library.\n"
+            "Please note that the results of this scan are entirely based on "
+            "the available data on Deezer.\n"
+        )
+        if not artist_album_map:
+            f.write("No artists or albums found in the music library.\n")
+            return
+        for mapped_artist, mapped_albums in artist_album_map.items():
+            f.write(f"**{mapped_artist}**\n")
+            if mapped_albums:
+                for album in mapped_albums:
+                    if album not in library.get(mapped_artist, []):
+                        f.write(f"- {album} (not in library :warning:)\n")
+                    else:
+                        f.write(f"- {album}\n")
+            else:
+                f.write("- No albums found.\n")
+            f.write("\n\n")
+
 
 if __name__ == "__main__":
     if not db_test():
-        print("Database connection failed.")
+        logger.error("Database connection failed.")
         sys.exit(1)
-    main()
+    main("/Volumes/media/music/Music")
     db_close()
