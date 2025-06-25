@@ -129,10 +129,10 @@ def main(path: str = ".") -> None:
             ]
         else:
             artist_album_map[artist.name] = []
-    sorted(artist_album_map.items())
+    sorted_artist_album_map = dict(sorted(artist_album_map.items()))
 
     with open("artist_albums.json", "w", encoding="utf-8") as f:
-        f.write(json.dumps(artist_album_map, indent=4, sort_keys=True))
+        f.write(json.dumps(sorted_artist_album_map, indent=4, sort_keys=True))
 
     # write markdown file with comparison of artists and albums
     with open("result.md", "w", encoding="utf-8") as f:
@@ -141,17 +141,17 @@ def main(path: str = ".") -> None:
             "This file contains a list of artists and their albums and "
             "marks them if they are not in the music library.\n"
             "Please note that the results of this scan are entirely based on "
-            "the available data on Deezer.\n"
+            "the available data on Deezer.\n\n"
         )
-        if not artist_album_map:
+        if not sorted_artist_album_map:
             f.write("No artists or albums found in the music library.\n")
             return
-        for mapped_artist, mapped_albums in artist_album_map.items():
+        for mapped_artist, mapped_albums in sorted_artist_album_map.items():
             f.write(f"**{mapped_artist}**\n")
             if mapped_albums:
                 for album in mapped_albums:
                     if album not in library.get(mapped_artist, []):
-                        f.write(f"- {album} (not in library :warning:)\n")
+                        f.write(f"- {album}  :warning: not in library\n")
                     else:
                         f.write(f"- {album}\n")
             else:
@@ -163,5 +163,6 @@ if __name__ == "__main__":
     if not db_test():
         logger.error("Database connection failed.")
         sys.exit(1)
-    main("/Volumes/media/music/Music")
+    main("music")
+    # main("/Volumes/media/music/Music")
     db_close()
