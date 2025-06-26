@@ -33,10 +33,9 @@ def write_json_file(
         f.write(json.dumps(content, indent=4, sort_keys=sort_keys))
 
 
-def write_markdown_file(
+def _write_markdown_file(
     filename: str,
-    content: dict[str, list[str]],
-    library: dict[str, list[str]],
+    text_content: str,
     overwrite: bool = False,
 ) -> None:
     """Write content to a markdown file."""
@@ -55,25 +54,70 @@ def write_markdown_file(
             logger.error("File not overwritten. Exiting.")
             return
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("# Artist Albums Comparison\n\n")
-        f.write(
-            "This file contains a list of artists and their albums and "
-            "marks them if they are not in the music library.\n"
-            "Please note that the results of this scan are entirely based on "
-            "the available data on Deezer.\n\n"
-        )
-        if not content:
-            f.write("No artists or albums found in the music library.\n")
-            return
-        for mapped_artist, mapped_albums in content.items():
-            f.write(f"**{mapped_artist}**\n")
-            if mapped_albums:
-                for album in mapped_albums:
-                    if album not in library.get(mapped_artist, []):
-                        f.write(f"- {album}  :warning: not in library\n")
-                    else:
-                        f.write(f"- {album}\n")
-            else:
-                f.write("- No albums found.\n")
-            f.write("\n\n")
-    print(f"Markdown file {filename} written successfully.")
+        f.write(text_content)
+    logger.info("Markdown file %s written successfully.", filename)
+
+
+def write_results_markdown(
+    filename: str,
+    content: dict[str, list[str]],
+    library: dict[str, list[str]],
+    overwrite: bool = False,
+) -> None:
+    """Write results to a markdown file."""
+
+    text_content = """# Artist Albums Comparison
+
+    This file contains a list of artists and their albums and marks them if they are not in the music library.
+    Please note that the results of this scan are entirely based on the available data on Deezer.
+
+    """
+    if not content:
+        text_content += "No artists or albums found in the music library.\n"
+        _write_markdown_file(filename, text_content, overwrite)
+        return
+
+    for mapped_artist, mapped_albums in content.items():
+        text_content += f"\n**{mapped_artist}**\n"
+        if mapped_albums:
+            for album in mapped_albums:
+                if album not in library.get(mapped_artist, []):
+                    text_content += f"- {album}  :warning: not in library\n"
+                else:
+                    text_content += f"- {album}\n"
+        else:
+            text_content += "- No albums found.\n"
+        text_content += "\n\n"
+
+    _write_markdown_file(filename, text_content, overwrite)
+
+
+def write_diff_markdown(
+    filename: str,
+    content: dict[str, list[str]],
+    overwrite: bool = False,
+) -> None:
+    """Write differences to a markdown file."""
+
+    text_content = """# Artist Albums Comparison
+
+    This file contains a list of artists and their albums which are not in the music library
+    or new since the last scan.
+    Please note that the results of this scan are entirely based on the available data on Deezer.
+
+    """
+    if not content:
+        text_content += "No changes detected.\n"
+        _write_markdown_file(filename, text_content, overwrite)
+        return
+
+    for mapped_artist, mapped_albums in content.items():
+        text_content += f"\n**{mapped_artist}**\n"
+        if mapped_albums:
+            for album in mapped_albums:
+                text_content += f"- {album}\n"
+        else:
+            text_content += "- No albums found.\n"
+        text_content += "\n\n"
+
+    _write_markdown_file(filename, text_content, overwrite)

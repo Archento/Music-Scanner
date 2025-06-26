@@ -195,4 +195,4 @@ cython_debug/
 
 library.json
 artist_albums.json
-result.md
+*result.md

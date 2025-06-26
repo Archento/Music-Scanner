@@ -2,15 +2,16 @@
 Main script to crawl a music library and retrieve artist and album information.
 """
 
-import json
 import os
 import sys
+from datetime import datetime
 from logging import getLogger
 
 from src.db import (
     db_close,
     db_get_albums_by_artist_id,
     db_get_artist,
+    db_get_scan_dump,
     db_set_album,
     db_set_artist,
     db_set_scan_dump,
@@ -18,7 +19,12 @@ from src.db import (
 )
 from src.deez import search_artist, search_artist_albums
 from src.models import Album, Artist
-from src.utils import fast_scandir, write_markdown_file
+from src.utils import (
+    fast_scandir,
+    write_diff_markdown,
+    write_json_file,
+    write_results_markdown,
+)
 
 logger = getLogger(__name__)
 
@@ -97,12 +103,18 @@ def crawl_music_library(folder_path: str = ".") -> dict[str, list[str]]:
     return artists
 
 
-def main(path: str = ".") -> None:
+def main(
+    path: str = ".",
+    *,
+    verbose_file_output: bool = False,
+) -> None:
     """Main function to run the script"""
+    now = datetime.now()
     library = crawl_music_library(path)
 
-    with open("library.json", "w", encoding="utf-8") as f:
-        f.write(json.dumps(library, indent=4, sort_keys=True))
+    if verbose_file_output:
+        logger.info("Writing library to JSON file.")
+        write_json_file("artist_albums", library)
 
     missing_artists: list[str] = []
     db_artists: list[Artist] = []
@@ -132,16 +144,42 @@ def main(path: str = ".") -> None:
             artist_album_map[artist.name] = []
     sorted_artist_album_map = dict(sorted(artist_album_map.items()))
 
-    with open("artist_albums.json", "w", encoding="utf-8") as f:
-        f.write(json.dumps(sorted_artist_album_map, indent=4, sort_keys=True))
+    if verbose_file_output:
+        logger.info("Writing library to JSON file.")
+        write_json_file("artist_albums", sorted_artist_album_map)
 
-    # save json to database for later comparison
-    db_set_scan_dump(path, sorted_artist_album_map)
+    previous_dump = db_get_scan_dump(path)
+    diff = {}
+    if previous_dump:
+        logger.info("Found previous scan dump in the database.")
+        if previous_dump == sorted_artist_album_map:
+            logger.info("No changes detected since the last scan.")
+        else:
+            logger.info("Changes detected since the last scan.")
+            diff = {
+                artist: [
+                    a for a in albums if a not in previous_dump.get(artist, [])
+                ]
+                for artist, albums in sorted_artist_album_map.items()
+                if previous_dump.get(artist) != albums
+            }
 
-    # write markdown file with comparison of artists and albums
-    write_markdown_file(
-        "result.md", sorted_artist_album_map, library, overwrite=True
-    )
+    if not previous_dump or diff:
+        db_set_scan_dump(path, sorted_artist_album_map)
+
+        # write markdown file with comparison of artists and albums
+        write_results_markdown(
+            f"{now.isoformat(timespec='minutes')}_result",
+            sorted_artist_album_map,
+            library,
+            overwrite=True,
+        )
+        if diff:
+            write_diff_markdown(
+                f"{now.isoformat(timespec='minutes')}_diff",
+                diff,
+                overwrite=True,
+            )
 
 
 if __name__ == "__main__":
@@ -149,5 +187,5 @@ if __name__ == "__main__":
         logger.error("Database connection failed.")
         sys.exit(1)
     # main("music")
-    main("/Volumes/media/music/Music")
+    main("/Volumes/media/music/Music", verbose_file_output=True)
     db_close()
