@@ -1,3 +1,4 @@
+import json
 import os
 from logging import getLogger
 
@@ -20,6 +21,18 @@ def fast_scandir(dirname: str, blacklist: set | None = None) -> list[str]:
     return subfolders
 
 
+def write_json_file(
+    filename: str,
+    content: dict[str, list[str]],
+    sort_keys: bool = True,
+):
+    """Write content to a JSON file."""
+    if not filename.endswith(".json"):
+        filename += ".json"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(json.dumps(content, indent=4, sort_keys=sort_keys))
+
+
 def write_markdown_file(
     filename: str,
     content: dict[str, list[str]],
@@ -27,6 +40,8 @@ def write_markdown_file(
     overwrite: bool = False,
 ) -> None:
     """Write content to a markdown file."""
+    if not filename.endswith(".md"):
+        filename += ".md"
     if not overwrite and os.path.exists(filename):
         if (
             input(

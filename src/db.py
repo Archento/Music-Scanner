@@ -244,11 +244,15 @@ def db_get_scan_dump(folder_path: str) -> dict[str, list[str]] | None:
     query = f"""
         SELECT scan_dump
         FROM scan_results
-        WHERE folder_path = "{folder_path}"'
+        WHERE folder_path = "{folder_path}"
         ORDER BY id DESC
         LIMIT 1
     """
     result = db_get_plain(query)
     if result:
-        return json.loads(result[0]["scan_dump"])  # type: ignore
+        try:
+            return json.loads(result[0][0])  # type: ignore
+        except json.JSONDecodeError as e:
+            logger.error("Error decoding JSON: %s", e)
+            return None
     return None
