@@ -18,7 +18,7 @@ from src.db import (
 )
 from src.deez import search_artist, search_artist_albums
 from src.models import Album, Artist
-from src.utils import fast_scandir
+from src.utils import fast_scandir, write_markdown_file
 
 logger = getLogger(__name__)
 
@@ -139,28 +139,9 @@ def main(path: str = ".") -> None:
     db_set_scan_dump(path, sorted_artist_album_map)
 
     # write markdown file with comparison of artists and albums
-    with open("result.md", "w", encoding="utf-8") as f:
-        f.write("# Artist Albums Comparison\n\n")
-        f.write(
-            "This file contains a list of artists and their albums and "
-            "marks them if they are not in the music library.\n"
-            "Please note that the results of this scan are entirely based on "
-            "the available data on Deezer.\n\n"
-        )
-        if not sorted_artist_album_map:
-            f.write("No artists or albums found in the music library.\n")
-            return
-        for mapped_artist, mapped_albums in sorted_artist_album_map.items():
-            f.write(f"**{mapped_artist}**\n")
-            if mapped_albums:
-                for album in mapped_albums:
-                    if album not in library.get(mapped_artist, []):
-                        f.write(f"- {album}  :warning: not in library\n")
-                    else:
-                        f.write(f"- {album}\n")
-            else:
-                f.write("- No albums found.\n")
-            f.write("\n\n")
+    write_markdown_file(
+        "result.md", sorted_artist_album_map, library, overwrite=True
+    )
 
 
 if __name__ == "__main__":
