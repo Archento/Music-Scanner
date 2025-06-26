@@ -1,3 +1,4 @@
+import json
 import sys
 from logging import getLogger
 from typing import Literal
@@ -26,6 +27,7 @@ except mariadb.Error as e:
 def db_close() -> None:
     """
     Close the database connection.
+
     :return: None
     """
     try:
@@ -39,7 +41,8 @@ def db_close() -> None:
 def db_test() -> bool:
     """
     Test the database connection.
-    :return: None
+
+    :return bool: True if the connection is successful, False otherwise.
     """
     result = False
     cursor = database.cursor()
@@ -56,6 +59,7 @@ def db_test() -> bool:
 def _db_get(query: str, model: type[BaseModel]) -> list[BaseModel]:
     """
     Get data from the database.
+
     :param query: SQL query to execute.
     :param model: Pydantic model to convert the result to.
     :return: List of results or None.
@@ -75,12 +79,31 @@ def _db_get(query: str, model: type[BaseModel]) -> list[BaseModel]:
     return []
 
 
+def db_get_plain(query: str) -> list[dict[str, str]]:
+    """
+    Get plain data from the database.
+
+    :param query: SQL query to execute.
+    :return: List of results as dictionaries.
+    """
+    cursor = database.cursor()
+    try:
+        cursor.execute(query)
+        return cursor.fetchall()
+    except mariadb.Error as e:
+        logger.error("Error executing query: %s", e)
+    finally:
+        cursor.close()
+    return []
+
+
 def _db_set(query: str, params: tuple | None = None) -> bool:
     """
     Set data in the database.
+
     :param query: SQL query to execute.
     :param params: Parameters to pass to the query.
-    :return: None
+    :return bool: If the operation was successful.
     """
     if params is None:
         raise ValueError("params cannot be None")
@@ -99,6 +122,7 @@ def _db_set(query: str, params: tuple | None = None) -> bool:
 def db_get_artist(name: str) -> Artist | None:
     """
     Get artist from the database.
+
     :param name: Name of the artist.
     :return: Artist data.
     """
@@ -111,8 +135,9 @@ def db_get_artist(name: str) -> Artist | None:
 def db_set_artist(data: Artist) -> bool:
     """
     Set artist in the database.
+
     :param data: Artist data.
-    :return: None
+    :return bool: If the operation was successful.
     """
     query = """
         INSERT INTO artists (id, name, link, picture, picture_small,
@@ -143,7 +168,10 @@ def db_get_albums_by_artist_id(
 ) -> list[Album]:
     """
     Get album from the database.
+
     :param artist_id: ID of the artist.
+    :param album_type: Type of the album (album, single, ep).
+        If None, all types are returned.
     :return: Album data.
     """
     query = f"SELECT * FROM albums WHERE artist_id = '{artist_id}'"
@@ -157,8 +185,10 @@ def db_get_albums_by_artist_id(
 def db_set_album(artist_id: int, data: Album) -> bool:
     """
     Set album in the database.
+
+    :param artist_id: ID of the artist.
     :param data: Album data.
-    :return: None
+    :return bool: If the operation was successful.
     """
     query = """
         INSERT INTO albums (id, title, link, cover, cover_small,
@@ -184,3 +214,41 @@ def db_set_album(artist_id: int, data: Album) -> bool:
     """
     params = tuple([*data.model_dump().values()]) + (artist_id,)
     return _db_set(query, params)
+
+
+def db_set_scan_dump(
+    folder_path: str, scan_result: dict[str, list[str]]
+) -> bool:
+    """
+    Set scan result in the database.
+
+    :param folder_path: Path of the folder scanned.
+    :param scan_result: Result of the scan.
+    :return bool: If the operation was successful.
+    """
+    query = """
+        INSERT INTO scan_results (folder_path, scan_dump)
+        VALUES (%s, %s)
+    """
+    params = (folder_path, json.dumps(scan_result))
+    return _db_set(query, params)
+
+
+def db_get_scan_dump(folder_path: str) -> dict[str, list[str]] | None:
+    """
+    Get scan result from the database.
+
+    :param folder_path: Path of the folder scanned.
+    :return: Scan result or None if not found.
+    """
+    query = f"""
+        SELECT scan_dump
+        FROM scan_results
+        WHERE folder_path = "{folder_path}"'
+        ORDER BY id DESC
+        LIMIT 1
+    """
+    result = db_get_plain(query)
+    if result:
+        return json.loads(result[0]["scan_dump"])  # type: ignore
+    return None

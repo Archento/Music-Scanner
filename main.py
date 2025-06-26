@@ -13,6 +13,7 @@ from src.db import (
     db_get_artist,
     db_set_album,
     db_set_artist,
+    db_set_scan_dump,
     db_test,
 )
 from src.deez import search_artist, search_artist_albums
@@ -134,6 +135,9 @@ def main(path: str = ".") -> None:
     with open("artist_albums.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(sorted_artist_album_map, indent=4, sort_keys=True))
 
+    # save json to database for later comparison
+    db_set_scan_dump(path, sorted_artist_album_map)
+
     # write markdown file with comparison of artists and albums
     with open("result.md", "w", encoding="utf-8") as f:
         f.write("# Artist Albums Comparison\n\n")
@@ -163,6 +167,6 @@ if __name__ == "__main__":
     if not db_test():
         logger.error("Database connection failed.")
         sys.exit(1)
-    main("music")
-    # main("/Volumes/media/music/Music")
+    # main("music")
+    main("/Volumes/media/music/Music")
     db_close()
