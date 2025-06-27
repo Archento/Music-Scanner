@@ -10,4 +10,12 @@ DB_NAME = os.getenv("DB_NAME", "mydatabase")
 DB_USER = os.getenv("DB_USER", "user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 
-BLACKLIST = {"OST", "Gelaber", "Stream", "Mod-Music", "Promo"}
+BLACKLIST = {
+    "OST",
+    "Gelaber",
+    "Stream",
+    "Mod-Music",
+    "Promo",
+    "Lifeforce Records",
+    "Various Artists",
+}

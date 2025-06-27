@@ -20,6 +20,7 @@ from src.db import (
 from src.deez import search_artist, search_artist_albums
 from src.models import Album, Artist
 from src.utils import (
+    download_image,
     fast_scandir,
     write_diff_markdown,
     write_json_file,
@@ -107,6 +108,7 @@ def main(
     path: str = ".",
     *,
     verbose_file_output: bool = False,
+    download_artist_images: bool = True,
 ) -> None:
     """Main function to run the script"""
     now = datetime.now()
@@ -122,6 +124,10 @@ def main(
         db_artist = retrieve_artist(artist)
         if db_artist:
             db_artists.append(db_artist)
+            if download_artist_images and db_artist.picture_xl:
+                download_image(
+                    db_artist.picture_xl, "artist", f"{path}/{db_artist.name}/"
+                )
         else:
             missing_artists.append(artist)
 

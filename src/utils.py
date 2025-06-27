@@ -2,6 +2,8 @@ import json
 import os
 from logging import getLogger
 
+import requests
+
 from src.config import BLACKLIST
 
 logger = getLogger(__name__)
@@ -121,3 +123,23 @@ def write_diff_markdown(
         text_content += "\n\n"
 
     _write_markdown_file(filename, text_content, overwrite)
+
+
+def download_image(
+    url: str,
+    filename: str = "artist",
+    download_path: str = "./",
+):
+    """
+    Download an image from a URL and save it to the specified path.
+    """
+    file = f"{download_path}{filename}.jpg"
+    try:
+        if os.path.exists(file):
+            logger.debug("File %s already exists. Skipping download.", file)
+            return
+        img_data = requests.get(url, timeout=10).content
+        with open(file, "wb") as handler:
+            handler.write(img_data)
+    except Exception as e:
+        logger.error("Failed to download artist image for '%s': %s", file, e)

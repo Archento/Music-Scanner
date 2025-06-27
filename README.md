@@ -5,6 +5,7 @@ Features:
 - [x] Scan local music files
 - [x] Create a list of missing albums
 - [x] Connect to a remote database
+- [x] Download artist image automatically
 - [ ] Download album covers automatically
 - [x] Save the list to a file
 - [ ] Add a web interface
