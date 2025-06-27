@@ -142,9 +142,12 @@ def main(
     for artist in db_artists:
         albums: list[Album] = retrieve_albums(artist)
         if albums:
-            sorted(albums, key=lambda x: x.release_date, reverse=True)
+            sorted_albums = sorted(
+                albums, key=lambda x: x.release_date, reverse=True
+            )
             artist_album_map[artist.name] = [
-                f"{album.release_date.year} - {album.title}" for album in albums
+                f"{album.release_date.year} - {album.title}"
+                for album in sorted_albums
             ]
         else:
             artist_album_map[artist.name] = []
