@@ -126,7 +126,7 @@ def main(
             db_artists.append(db_artist)
             if download_artist_images and db_artist.picture_xl:
                 download_image(
-                    db_artist.picture_xl, "artist", f"{path}/{db_artist.name}/"
+                    db_artist.picture_xl, "folder", f"{path}/{db_artist.name}/"
                 )
         else:
             missing_artists.append(artist)
@@ -195,6 +195,9 @@ if __name__ == "__main__":
     if not db_test():
         logger.error("Database connection failed.")
         sys.exit(1)
-    # main("music")
-    main("/Volumes/media/music/Music", verbose_file_output=True)
+    main(
+        "/Volumes/media/music/Music",
+        verbose_file_output=True,
+        download_artist_images=False,
+    )
     db_close()

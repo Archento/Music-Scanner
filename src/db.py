@@ -1,3 +1,10 @@
+"""
+Database interaction module for Music Scanner.
+
+This module provides functions to interact with the MariaDB database, including
+retrieving and storing artist and album data, as well as scan results.
+"""
+
 import json
 import sys
 from logging import getLogger

@@ -1,3 +1,10 @@
+"""
+This module provides utility functions for the Music Scanner application.
+
+It includes functions for fast directory scanning, writing JSON and markdown
+files, downloading images, and more.
+"""
+
 import json
 import os
 from logging import getLogger

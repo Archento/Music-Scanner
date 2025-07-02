@@ -1,3 +1,10 @@
+"""
+This module defines the data models used in the application.
+
+It includes Pydantic models for artists and their albums, which are used to
+validate and serialize data retrieved from the Deezer API.
+"""
+
 from datetime import datetime
 from typing import Literal
 

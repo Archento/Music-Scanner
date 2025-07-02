@@ -1,3 +1,11 @@
+"""
+Deezer API interaction module for Music Scanner.
+
+This module provides functions to search for artists and their albums using the
+Deezer API. It includes error handling and logging for better debugging and
+maintenance.
+"""
+
 from logging import getLogger
 
 import requests
