@@ -1,6 +1,16 @@
+[![banner](https://github.com/Archento/Music-Scanner/blob/main/banner.jpg)]
+
+# Music Scanner
+
 This tool scans your local music files and creates a list of missing albums. Covers are automatically downloaded.
 
-Features:
+## Requires:
+
+- [Python](https://www.python.org) 3.10 or higher
+- [uv](https://github.com/astral-sh/uv) for package management
+- [MariaDB](https://mariadb.com) for storing artist and album information
+
+## Features:
 
 - [x] Scan local music files
 - [x] Create a list of missing albums
@@ -8,5 +18,3 @@ Features:
 - [x] Download artist image automatically ("folder.jpg")
 - [ ] Download album covers automatically ("cover.jpg")
 - [x] Save the list to a file
-- [ ] Add a web interface
-- [ ] Add a command line interface
