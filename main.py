@@ -2,10 +2,12 @@
 Main script to crawl a music library and retrieve artist and album information.
 """
 
+import argparse
 import os
 import sys
 from datetime import datetime
 from logging import getLogger
+from pathlib import Path
 
 from src.db import (
     db_close,
@@ -191,13 +193,47 @@ def main(
             )
 
 
+parser = argparse.ArgumentParser(
+    prog="music-scanner",
+    description="Scan your local music library and retrieve artist and album information.",
+    epilog="source: https://github.com/Archento/Music-Scanner",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+
+parser.add_argument(
+    "-p",
+    "--path",
+    type=str,
+    default=".",
+    help="The path to the music library.",
+)
+parser.add_argument(
+    "-v",
+    "--verbose",
+    action="store_true",
+    help="Enable verbose file and cli output.",
+)
+args = parser.parse_args()
+
+target_dir = Path(args.path)
+if not target_dir.exists():
+    print("The target directory doesn't exist")
+    raise SystemExit(1)
+
+if args.verbose:
+    logger.setLevel("DEBUG")
+else:
+    logger.setLevel("INFO")
+
+
 if __name__ == "__main__":
     if not db_test():
         logger.error("Database connection failed.")
         sys.exit(1)
     main(
-        "/Volumes/media/music/Music",
-        verbose_file_output=True,
+        path=args.path,
+        verbose_file_output=args.verbose,
         download_artist_images=False,
     )
     db_close()
