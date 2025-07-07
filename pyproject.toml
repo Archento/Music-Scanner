@@ -1,7 +1,7 @@
 [project]
 name = "music-scanner"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple tool to scan your local music files and identify missing albums."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
