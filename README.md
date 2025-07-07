@@ -1,4 +1,4 @@
-[banner](https://github.com/Archento/Music-Scanner/blob/main/banner.jpg)
+![banner](https://github.com/Archento/Music-Scanner/blob/main/banner.jpg)
 
 # Music Scanner
 
