@@ -20,6 +20,7 @@ A simple tool to scan your local music files and identify missing albums, while 
 - [ ] Download album covers automatically ("cover.jpg")
 - [x] Save the list to a file
 - [x] CLI interface
+- [ ] Web interface (planned)
 
 ## Usage
 
